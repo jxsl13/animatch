@@ -46,5 +46,5 @@ func updateCacheFromAPI(cmd *cobra.Command, args []string) error {
 	if err := c.Save(); err != nil {
 		return wrapErrApi(err)
 	}
-	return common.Println("anime title cache was updated successfully")
+	return common.Println(cmd, "anime title cache was updated successfully")
 }

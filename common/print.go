@@ -3,18 +3,12 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"strconv"
+
+	"github.com/spf13/cobra"
 )
 
-var (
-	Stdout io.Writer = os.Stdout
-	Stderr io.Writer = os.Stderr
-	Stdin  io.Writer = os.Stdin
-)
-
-func Println(a ...interface{}) error {
+func Println(cmd *cobra.Command, a ...interface{}) error {
 	objects := make([]interface{}, 0, len(a))
 
 	for _, v := range a {
@@ -34,11 +28,11 @@ func Println(a ...interface{}) error {
 		}
 	}
 
-	_, err := fmt.Fprintln(Stdout, objects...)
+	_, err := fmt.Fprintln(cmd.OutOrStdout(), objects...)
 	return err
 }
 
-func Printf(format string, a ...interface{}) error {
+func Printf(cmd *cobra.Command, format string, a ...interface{}) error {
 	objects := make([]interface{}, 0, len(a))
 	for _, v := range a {
 		switch x := v.(type) {
@@ -58,6 +52,6 @@ func Printf(format string, a ...interface{}) error {
 
 	}
 
-	_, err := fmt.Fprintf(Stdout, format, objects...)
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), format, objects...)
 	return err
 }

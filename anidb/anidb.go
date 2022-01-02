@@ -55,7 +55,7 @@ func BestMatch(terms []string, maxEditDistance ...int) (title string, at *AnimeT
 	}
 
 	titles := ts.Titles()
-	_, i, j, err := filter.LowestLDistNestedArgs(terms, ts.Titles())
+	_, i, j, err := filter.LowestLDistNestedArgs(terms, titles)
 	if err != nil {
 		return "", nil, err
 	}

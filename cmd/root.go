@@ -6,7 +6,7 @@ import (
 
 func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "animatch [file|folder|folder/*.mkv]",
+		Use: "animatch [subcommand]",
 		Long: `
 Use the following command to add auto completions for your terminal:
 
@@ -16,6 +16,7 @@ Use the following command to add auto completions for your terminal:
 	}
 
 	cmd.AddCommand(NewSearchCmd())
+	cmd.AddCommand(NewMatchCmd())
 	cmd.AddCommand(NewCacheCmd())
 
 	//cmd.PersistentFlags().Bool("apply", false, "set this flag in order to acually apply changes (renaming of files, etc.)")

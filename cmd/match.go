@@ -1,21 +1,19 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/jxsl13/animatch/anidb"
+	"github.com/jxsl13/animatch/clean"
 	"github.com/jxsl13/animatch/common"
 	"github.com/spf13/cobra"
 )
 
-const (
-	FlagDistance          = "distance"
-	FlagDistanceShorthand = "d"
-)
-
-func NewSearchCmd() *cobra.Command {
+func NewMatchCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "search [text|file|folder|folder/*.mkv]",
-		Short: "allows to search for the provided anime name.",
-		RunE:  searchCmd,
+		Use:   "match filepath",
+		Short: "allows to match a file path to an anime name.",
+		RunE:  matchCmd,
 		Args:  cobra.MinimumNArgs(1),
 	}
 
@@ -30,21 +28,17 @@ func NewSearchCmd() *cobra.Command {
 	return cmd
 }
 
-func searchCmd(cmd *cobra.Command, args []string) error {
+func matchCmd(cmd *cobra.Command, args []string) error {
+	terms := clean.Overlap(clean.NormalizeAll(clean.SplitPath(clean.RemoveExtension(strings.Join(args, " ")), 2)))
 
 	distance, err := common.LookupFlagInt(cmd, FlagDistance)
 	if err != nil {
 		return err
 	}
-	title, animeT, err := anidb.BestMatch(args, distance)
+	title, animeT, err := anidb.BestMatch(terms, distance)
 	if err != nil {
 		return err
 	}
 
-	anime, err := anidb.MetaData(animeT.AID)
-	if err != nil {
-		return err
-	}
-
-	return common.Printf(cmd, "%s: %s\n", title, anime)
+	return common.Printf(cmd, "%s: %s\n", title, animeT.AID)
 }
