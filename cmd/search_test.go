@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewRootCmd(t *testing.T) {
+func TestNewSearchCmd(t *testing.T) {
 	assert := assert.New(t)
-	out, err := common.ExecuteWithArgs(NewRootCmd(), "--help")
+	out, err := common.ExecuteWithArgs(NewSearchCmd(), "one", "piece")
 	assert.NoError(err)
 	t.Log(string(out))
 }

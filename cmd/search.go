@@ -6,6 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	FlagDistance          = "distance"
+	FlagDistanceShorthand = "d"
+)
+
 func NewSearchCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "search [text|file|folder|folder/*.mkv]",
@@ -15,15 +20,31 @@ func NewSearchCmd() *cobra.Command {
 	}
 
 	// modify public variable of anydb package in case that this flag is set
-	cmd.Flags().IntVarP(&anidb.MatchDistanceUpperBound, "distance", "d", 5, "increase this distance in order  to allow a broader range of matches")
+	cmd.Flags().IntP(
+		FlagDistance,
+		FlagDistanceShorthand,
+		anidb.DefaultMatchDistanceUpperBound,
+		"increase this distance in order to allow a broader range of matches",
+	)
 
 	return cmd
 }
 
 func searchCmd(cmd *cobra.Command, args []string) error {
-	title, anime, err := anidb.BestMatch(args)
+
+	distance, err := common.LookupFlagInt(cmd, FlagDistance)
 	if err != nil {
 		return err
 	}
-	return common.Printf("%s: %s\n", title, anime.AID)
+	title, animeT, err := anidb.BestMatch(args, distance)
+	if err != nil {
+		return err
+	}
+
+	anime, err := anidb.MetaData(animeT.AID)
+	if err != nil {
+		return err
+	}
+
+	return common.Printf("%s: %s\n", title, anime)
 }

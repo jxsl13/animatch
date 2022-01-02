@@ -11,16 +11,20 @@ import (
 
 const (
 	ErrTitleNotFound = common.Error("title not found")
+
+	// DefaultMatchDistanceUpperBound is the number of characters that
+	// can at most be edited in order to reach the target search term
+	// this is the default value that is set if no edit distance is provided as parameter
+	DefaultMatchDistanceUpperBound = 5
 )
 
 var (
-	// MatchDistanceUpperBound is th enumber of characters that
-	// can at most be edited in order to reach the target search term
-	MatchDistanceUpperBound = 5
-	wrapErrTitleNotFound    = common.WrapErr(ErrTitleNotFound)
+	wrapErrTitleNotFound = common.WrapErr(ErrTitleNotFound)
 )
 
-type SearchResult []anidb.AnimeT
+type Anime = anidb.Anime
+type AnimeT = anidb.AnimeT
+type SearchResult []AnimeT
 
 func (sr SearchResult) Titles() [][]string {
 	titles := make([][]string, len(sr))
@@ -36,9 +40,16 @@ func (sr SearchResult) Titles() [][]string {
 	return titles
 }
 
+func MetaData(aid int) (*Anime, error) {
+	client := NewClient()
+	return client.RequestAnime(aid)
+}
+
 // BestMatch tries to fetch the best matching anime for the provided search term
-func BestMatch(terms []string) (title string, at *anidb.AnimeT, err error) {
-	ts, err := Search(terms)
+// maxEditDistance is an optional single value that allows to provide an upper boundary
+// which is exclusive. This boundary controls the search match accuracy.
+func BestMatch(terms []string, maxEditDistance ...int) (title string, at *AnimeT, err error) {
+	ts, err := Search(terms, maxEditDistance...)
 	if err != nil {
 		return "", nil, err
 	}
@@ -55,7 +66,9 @@ func BestMatch(terms []string) (title string, at *anidb.AnimeT, err error) {
 }
 
 // Search simply looks for the provided terms
-func Search(terms []string) (SearchResult, error) {
+// maxEditDistance is an optional single value that allows to provide an upper boundary
+// which is exclusive. This boundary controls the search match accuracy.
+func Search(terms []string, maxEditDistance ...int) (SearchResult, error) {
 	tc, err := anidb.DefaultTitlesCache()
 	if err != nil {
 		return nil, err
@@ -65,7 +78,7 @@ func Search(terms []string) (SearchResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	ts = search(terms, ts)
+	ts = search(terms, ts, maxEditDistance...)
 	if len(ts) == 0 {
 		return nil, wrapErrTitleNotFound(strings.Join(terms, " "))
 	}
@@ -98,13 +111,14 @@ func titlesToStrings(ts []anidb.Title) []string {
 // If the regex is not matched, the best match is returned that has the lowest
 // levenshtein edit distance that is also capped at an upper boundary that is concidered not
 // a proper match anymore.
-func search(terms []string, ts SearchResult) SearchResult {
+// maxEditDistance can be passed as single optional parameter that is used to vary the search accuracy
+func search(terms []string, ts SearchResult, maxEditDistance ...int) SearchResult {
 	r := globTerms(terms)
 	term := strings.Join(terms, " ")
 
 	// remove empty spaces that we addd by joining the strings
 	// and allow some more leeway
-	upperBound := (len(terms) - 1) + MatchDistanceUpperBound
+	upperBound := (len(terms) - 1) + common.OptionalIntWithDefault(DefaultMatchDistanceUpperBound, maxEditDistance...)
 
 	var matched SearchResult
 	for _, at := range ts {

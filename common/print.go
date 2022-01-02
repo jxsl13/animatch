@@ -1,7 +1,6 @@
 package common
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,18 +15,26 @@ var (
 )
 
 func Println(a ...interface{}) error {
-	buf := bytes.Buffer{}
+	objects := make([]interface{}, 0, len(a))
 
 	for _, v := range a {
-		b, err := json.MarshalIndent(v, "", " ")
-		if err != nil {
-			return err
+		switch x := v.(type) {
+		case string:
+			objects = append(objects, x)
+		case float64:
+			objects = append(objects, FormatFloat64(x))
+		case int:
+			objects = append(objects, strconv.Itoa(x))
+		default:
+			b, err := json.MarshalIndent(v, "", " ")
+			if err != nil {
+				return err
+			}
+			objects = append(objects, string(b))
 		}
-		buf.Write(b)
-		buf.WriteString("\n")
 	}
 
-	_, err := fmt.Fprintf(Stdout, "%s", buf.Bytes())
+	_, err := fmt.Fprintln(Stdout, objects...)
 	return err
 }
 

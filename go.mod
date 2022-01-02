@@ -8,4 +8,5 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.felesatra.moe/anidb v1.3.0-alpha5
 	golang.org/x/text v0.3.7
+	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 )
