@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jxsl13/animatch/anidb"
@@ -11,19 +13,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	FlagPathDepth          = "path-depth"
-	FlagPathDepthShorthand = "p"
-	DefaultPathDepth       = 1
-
-	ErrPatchNotFound = common.Error("path not found")
-)
-
-func NewMatchCmd() *cobra.Command {
+func NewTagCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "match filepath",
-		Short: "allows to match a file path to an anime name.",
-		RunE:  matchCmd,
+		Use:   "tag filepath",
+		Short: "matches your anime and adds an AniDB suffix [a12345] to all of your matched files.",
+		RunE:  tagCmd,
 		Args:  cobra.MinimumNArgs(1),
 	}
 
@@ -38,51 +32,55 @@ func NewMatchCmd() *cobra.Command {
 	return cmd
 }
 
-func matchCmd(cmd *cobra.Command, args []string) error {
+func tagCmd(cmd *cobra.Command, args []string) error {
 	depth, _ := common.LookupFlagInt(cmd, FlagPathDepth)
 
 	filePath := strings.Join(args, " ")
 	fileStat, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
 
 	filePaths := []string{}
-	if err != nil || !fileStat.IsDir() {
+	if !fileStat.IsDir() {
 		filePaths = append(filePaths, filePath)
 	} else {
 		files, err := common.Readdir(filePath)
 		if err != nil {
 			return err
 		}
-		filePaths = append(filePaths, files...)
+		filePaths = append(filePaths, filter.VideoFilePaths(files)...)
 	}
 
 	for _, p := range filePaths {
+
+		pathPrefix := clean.RemoveExtension(p)
+		ext := filepath.Ext(p)
 
 		normalizedTerms := clean.LanguageTags(
 			clean.Resolutions(
 				clean.TokenizeAll(
 					clean.SplitPath(
 						clean.Domains(
-							clean.RemoveExtension(p),
+							pathPrefix,
 						), depth))))
 
 		normalizedTerm := strings.Join(normalizedTerms, " ")
 
-		common.Println(cmd, "Path:\n", p, "\nSearch:\n", normalizedTerm)
-
-		// for i, metric := range filter.Metrics {
-		// 	distance, title, animeT, err := anidb.Search(normalizedTerm, metric)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	common.Printf(cmd, "%12s distance=%20s id=%5s : %s\n", filter.MetricNames[i], common.FormatFloat64(*distance), animeT.AID, title)
-		// }
-
-		distance, title, animeT, err := anidb.Search(normalizedTerm, filter.Metrics)
+		common.Println(cmd, "Path:   ", p)
+		common.Println(cmd, "Search: ", normalizedTerm)
+		_, title, animeT, err := anidb.Search(normalizedTerm, filter.Metrics)
 		if err != nil {
 			return err
 		}
+		common.Println(cmd, "Found:  ", *title)
 
-		common.Printf(cmd, "%s\n%12s distance=%20s id=%6s\n", title, "Summary", common.FormatFloat64(*distance), animeT.AID)
+		newPath := fmt.Sprintf("%s [anidb-%d]%s", pathPrefix, animeT.AID, ext)
+		common.Println(cmd, "Result: ", newPath, "\n")
+		err = os.Rename(p, newPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
