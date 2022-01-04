@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/jxsl13/animatch/anidb"
+	"github.com/jxsl13/animatch/clean"
 	"github.com/jxsl13/animatch/common"
+	"github.com/jxsl13/animatch/filter"
 	"github.com/spf13/cobra"
 )
 
@@ -32,19 +36,15 @@ func NewSearchCmd() *cobra.Command {
 
 func searchCmd(cmd *cobra.Command, args []string) error {
 
-	distance, err := common.LookupFlagInt(cmd, FlagDistance)
-	if err != nil {
-		return err
-	}
-	title, animeT, err := anidb.BestMatch(args, distance)
-	if err != nil {
-		return err
-	}
+	terms := clean.NormalizeAll(clean.TokenizeAll(args))
+	normalizedTerm := strings.Join(terms, " ")
 
-	anime, err := anidb.MetaData(animeT.AID)
-	if err != nil {
-		return err
+	for _, metric := range filter.Metrics {
+		distance, title, animeT, err := anidb.Search(normalizedTerm, metric)
+		if err != nil {
+			return err
+		}
+		common.Printf(cmd, "%s: %s[distance=%s]\n", title, animeT.AID, common.FormatFloat64(*distance))
 	}
-
-	return common.Printf(cmd, "%s: %s\n", title, anime)
+	return nil
 }
