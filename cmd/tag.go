@@ -13,6 +13,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	FlagApply          = "apply"
+	FlagApplyShorthand = "a"
+)
+
 func NewTagCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tag filepath",
@@ -29,11 +34,25 @@ func NewTagCmd() *cobra.Command {
 		"allows to add subpath to search query, increasing this value to 2 would add the parent directory to the search",
 	)
 
+	cmd.Flags().BoolP(
+		FlagApply,
+		FlagApplyShorthand,
+		false,
+		"use this flag in order to apply the action to the file system.",
+	)
+
 	return cmd
 }
 
 func tagCmd(cmd *cobra.Command, args []string) error {
-	depth, _ := common.LookupFlagInt(cmd, FlagPathDepth)
+	depth, err := common.LookupFlagInt(cmd, FlagPathDepth)
+	if err != nil {
+		return err
+	}
+	apply, err := common.LookupFlagBool(cmd, FlagApply)
+	if err != nil {
+		return err
+	}
 
 	filePath := strings.Join(args, " ")
 	fileStat, err := os.Stat(filePath)
@@ -62,25 +81,33 @@ func tagCmd(cmd *cobra.Command, args []string) error {
 				clean.TokenizeAll(
 					clean.SplitPath(
 						clean.Domains(
-							pathPrefix,
+							clean.Tags(pathPrefix),
 						), depth))))
 
 		normalizedTerm := strings.Join(normalizedTerms, " ")
 
-		common.Println(cmd, "Path:   ", p)
-		common.Println(cmd, "Search: ", normalizedTerm)
-		_, title, animeT, err := anidb.Search(normalizedTerm, filter.Metrics)
+		common.Println(cmd, "Path    : ", p)
+		common.Println(cmd, "Search  : ", normalizedTerm)
+		distance, title, animeT, err := anidb.Search(normalizedTerm, filter.Metrics)
 		if err != nil {
 			return err
 		}
-		common.Println(cmd, "Found:  ", *title)
+		common.Println(cmd, "Found   : ", *title)
 
 		newPath := fmt.Sprintf("%s [anidb-%d]%s", pathPrefix, animeT.AID, ext)
-		common.Println(cmd, "Result: ", newPath, "\n")
-		err = os.Rename(p, newPath)
-		if err != nil {
-			return err
+		common.Println(cmd, "Result  : ", newPath)
+		common.Println(cmd, "Distance: ", distance, "\n")
+
+		if apply {
+			err = os.Rename(p, newPath)
+			if err != nil {
+				return err
+			}
 		}
+	}
+
+	if !apply {
+		common.Println(cmd, "No files were moved or renamed, please use the --apply or -a flags in order to apply the changes.")
 	}
 
 	return nil

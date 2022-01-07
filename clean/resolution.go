@@ -2,8 +2,11 @@ package clean
 
 var (
 	resolutionList = []string{
+		"360p",
+		"480p",
 		"720p",
 		"1080p",
+		"2160",
 	}
 
 	ResolutionMap = map[string]bool{}
@@ -15,6 +18,7 @@ func init() {
 	}
 }
 
+// Resolutions removes video resolutions from the the string
 func Resolutions(ss []string) []string {
 	result := make([]string, 0, len(ss))
 

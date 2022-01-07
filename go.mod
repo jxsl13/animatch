@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/adrg/strutil v0.2.3
+	github.com/pkg/xattr v0.4.4 // indirect
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 	go.felesatra.moe/anidb v1.3.0-alpha5

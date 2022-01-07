@@ -79,7 +79,8 @@ func search(terms string, ts []AnimeT, metric StringMetric) (float64, string, An
 
 	for _, t := range ts {
 		// regex match
-		titles := clean.NormalizeAll(clean.TokenizeEach(titlesToStrings(t.Titles)))
+		originalTitles := titlesToStrings(t.Titles)
+		titles := clean.NormalizeAll(clean.TokenizeEach(originalTitles))
 
 		distance, index, err := filter.BestMatch(normalizedTerms, titles, metric)
 		if err != nil {
@@ -89,7 +90,7 @@ func search(terms string, ts []AnimeT, metric StringMetric) (float64, string, An
 		if distance > maxDist {
 			maxDist = distance
 			at = t
-			title = titles[index]
+			title = originalTitles[index]
 		}
 	}
 	return maxDist, title, at
