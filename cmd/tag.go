@@ -77,7 +77,7 @@ func tagCmd(cmd *cobra.Command, args []string) error {
 		ext := filepath.Ext(p)
 
 		normalizedTerms := clean.LanguageTags(
-			clean.Resolutions(
+			clean.ScreenResolutions(
 				clean.TokenizeAll(
 					clean.SplitPath(
 						clean.Domains(

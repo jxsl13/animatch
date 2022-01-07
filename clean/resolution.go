@@ -18,8 +18,8 @@ func init() {
 	}
 }
 
-// Resolutions removes video resolutions from the the string
-func Resolutions(ss []string) []string {
+// ScreenResolutions removes video resolutions from the the string
+func ScreenResolutions(ss []string) []string {
 	result := make([]string, 0, len(ss))
 
 	for _, s := range ss {

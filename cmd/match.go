@@ -58,7 +58,7 @@ func matchCmd(cmd *cobra.Command, args []string) error {
 	for _, p := range filePaths {
 
 		normalizedTerms := clean.LanguageTags(
-			clean.Resolutions(
+			clean.ScreenResolutions(
 				clean.TokenizeAll(
 					clean.SplitPath(
 						clean.Domains(
