@@ -19,10 +19,10 @@ const (
 	DefaultMatchDistanceUpperBound = 5
 )
 
+type TitlesCache = anidb.TitlesCache
 type StringMetric = strutil.StringMetric
 type Anime = anidb.Anime
 type AnimeT = anidb.AnimeT
-
 type SearchResult []AnimeT
 
 func (sr SearchResult) Titles() [][]string {
@@ -48,16 +48,29 @@ func MetaData(aid int) (*Anime, error) {
 // maxEditDistance is an optional single value that allows to provide an upper boundary
 // which is exclusive. This boundary controls the search match accuracy.
 func Search(terms string, metric StringMetric) (*float64, *string, *AnimeT, error) {
-	tc, err := anidb.DefaultTitlesCache()
+	defaultCache, err := DefaultTitlesCache()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	defer tc.SaveIfUpdated()
-	ts, err := tc.GetTitles()
+	defaultTitles, err := defaultCache.GetTitles()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	distance, title, at := search(terms, ts, metric)
+
+	normalizedCache, err := NormalizedTitlesCache()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	normalizedTitles, err := normalizedCache.GetTitles()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	distance, animeIndex, titleIndex := search(terms, normalizedTitles, metric)
+	// assuming that defaultCache index is the same as normalized cache index
+
+	at := defaultTitles[animeIndex]
+	title := at.Titles[titleIndex].Name
 
 	return &distance, &title, &at, nil
 }
@@ -70,28 +83,26 @@ func titlesToStrings(ts []anidb.Title) []string {
 	return result
 }
 
-func search(terms string, ts []AnimeT, metric StringMetric) (float64, string, AnimeT) {
+func search(terms string, ts []AnimeT, metric StringMetric) (distance float64, animeIndex, titleIndex int) {
 	normalizedTerms := clean.Normalize(terms)
 
 	maxDist := -math.MaxFloat64
-	at := AnimeT{}
-	title := ""
+	maxAnimeIndex := 0
+	maxTitleIndex := 0
 
-	for _, t := range ts {
+	for aIdx, t := range ts {
 		// regex match
-		originalTitles := titlesToStrings(t.Titles)
-		titles := clean.NormalizeAll(clean.TokenizeEach(originalTitles))
-
-		distance, index, err := filter.BestMatch(normalizedTerms, titles, metric)
+		titles := titlesToStrings(t.Titles)
+		distance, tIdx, err := filter.BestMatch(normalizedTerms, titles, metric)
 		if err != nil {
 			continue
 		}
 
 		if distance > maxDist {
 			maxDist = distance
-			at = t
-			title = originalTitles[index]
+			maxAnimeIndex = aIdx
+			maxTitleIndex = tIdx
 		}
 	}
-	return maxDist, title, at
+	return maxDist, maxAnimeIndex, maxTitleIndex
 }
