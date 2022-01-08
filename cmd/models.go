@@ -119,10 +119,10 @@ func (m *MatchResult) TaggedPath() string {
 		return ""
 	}
 
+	ext := filepath.Ext(m.MatchTerm)
 	pathPrefix := clean.RemoveExtension(m.MatchTerm)
-	pathSuffix := filepath.Ext(m.MatchTerm)
 
-	return pathPrefix + m.Tag() + pathSuffix
+	return fmt.Sprintf("%s %s%s", pathPrefix, m.Tag(), ext)
 }
 
 func (m *MatchResult) String() string {
@@ -140,21 +140,26 @@ func (m *MatchResult) String() string {
 	sb.WriteString(m.SearchTerm)
 	sb.WriteString("\n")
 
-	sb.WriteString("Episode : ")
-	sb.WriteString(m.Episode())
-	sb.WriteString("\n")
-
 	sb.WriteString("Found   : ")
 	sb.WriteString(m.FoundTitle)
+	sb.WriteString("\n")
+
+	sb.WriteString("Distance: ")
+	sb.WriteString(common.FormatFloat64(m.Distance))
 	sb.WriteString("\n")
 
 	sb.WriteString("ID      : ")
 	sb.WriteString(strconv.Itoa(m.FoundID))
 	sb.WriteString("\n")
 
-	sb.WriteString("Distance: ")
-	sb.WriteString(common.FormatFloat64(m.Distance))
+	sb.WriteString("Episode : ")
+	sb.WriteString(m.Episode())
 	sb.WriteString("\n")
+
+	sb.WriteString("Target  : ")
+	sb.WriteString(m.TaggedPath())
+	sb.WriteString("\n")
+
 	sb.WriteString("\n")
 
 	return sb.String()
