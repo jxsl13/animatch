@@ -4,18 +4,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jxsl13/animatch/anidb"
-	"github.com/jxsl13/animatch/clean"
 	"github.com/jxsl13/animatch/common"
 	"github.com/jxsl13/animatch/filter"
 	"github.com/spf13/cobra"
 )
 
 const (
-	FlagPathDepth          = "path-depth"
-	FlagPathDepthShorthand = "p"
-	DefaultPathDepth       = 1
-
 	ErrPatchNotFound = common.Error("path not found")
 )
 
@@ -27,19 +21,10 @@ func NewMatchCmd() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 	}
 
-	// modify public variable of anydb package in case that this flag is set
-	cmd.Flags().IntP(
-		FlagPathDepth,
-		FlagPathDepthShorthand,
-		DefaultPathDepth,
-		"allows to add subpath to search query, increasing this value to 2 would add the parent directory to the search",
-	)
-
 	return cmd
 }
 
 func matchCmd(cmd *cobra.Command, args []string) error {
-	depth, _ := common.LookupFlagInt(cmd, FlagPathDepth)
 
 	filePath := strings.Join(args, " ")
 	fileStat, err := os.Stat(filePath)
@@ -55,34 +40,15 @@ func matchCmd(cmd *cobra.Command, args []string) error {
 		filePaths = append(filePaths, files...)
 	}
 
-	for _, p := range filePaths {
+	filePaths = filter.VideoFilePaths(filePaths)
 
-		normalizedTerms := clean.LanguageTags(
-			clean.ScreenResolutions(
-				clean.TokenizeAll(
-					clean.SplitPath(
-						clean.Domains(
-							clean.RemoveExtension(p),
-						), depth))))
+	mr, err := Match(cmd, filePaths)
+	if err != nil {
+		return err
+	}
 
-		normalizedTerm := strings.Join(normalizedTerms, " ")
-
-		common.Println(cmd, "Path:\n", p, "\nSearch:\n", normalizedTerm)
-
-		// for i, metric := range filter.Metrics {
-		// 	distance, title, animeT, err := anidb.Search(normalizedTerm, metric)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	common.Printf(cmd, "%12s distance=%20s id=%5s : %s\n", filter.MetricNames[i], common.FormatFloat64(*distance), animeT.AID, title)
-		// }
-
-		distance, title, animeT, err := anidb.Search(normalizedTerm, filter.Metrics)
-		if err != nil {
-			return err
-		}
-
-		common.Printf(cmd, "%s\n%12s distance=%20s id=%6s\n", title, "Summary", common.FormatFloat64(*distance), animeT.AID)
+	for _, m := range mr {
+		common.Println(cmd, m.String())
 	}
 
 	return nil

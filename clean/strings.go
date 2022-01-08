@@ -104,3 +104,12 @@ func SplitSpace(token string) []string {
 	}
 	return result
 }
+
+func RemoveEachOnce(s string, removeSet ...string) string {
+
+	for _, rem := range removeSet {
+		s = strings.Replace(s, rem, "", 1)
+	}
+
+	return s
+}

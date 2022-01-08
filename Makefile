@@ -6,3 +6,8 @@ install: build
 
 build:
 	go build .
+
+
+race:
+	go build -race .
+	go install -race .

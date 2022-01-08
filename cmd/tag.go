@@ -3,11 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/jxsl13/animatch/anidb"
-	"github.com/jxsl13/animatch/clean"
 	"github.com/jxsl13/animatch/common"
 	"github.com/jxsl13/animatch/filter"
 	"github.com/spf13/cobra"
@@ -26,14 +23,6 @@ func NewTagCmd() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 	}
 
-	// modify public variable of anydb package in case that this flag is set
-	cmd.Flags().IntP(
-		FlagPathDepth,
-		FlagPathDepthShorthand,
-		DefaultPathDepth,
-		"allows to add subpath to search query, increasing this value to 2 would add the parent directory to the search",
-	)
-
 	cmd.Flags().BoolP(
 		FlagApply,
 		FlagApplyShorthand,
@@ -45,10 +34,6 @@ func NewTagCmd() *cobra.Command {
 }
 
 func tagCmd(cmd *cobra.Command, args []string) error {
-	depth, err := common.LookupFlagInt(cmd, FlagPathDepth)
-	if err != nil {
-		return err
-	}
 	apply, err := common.LookupFlagBool(cmd, FlagApply)
 	if err != nil {
 		return err
@@ -71,43 +56,38 @@ func tagCmd(cmd *cobra.Command, args []string) error {
 		filePaths = append(filePaths, filter.VideoFilePaths(files)...)
 	}
 
-	for _, p := range filePaths {
+	mr, err := Match(cmd, filePaths)
+	if err != nil {
+		return err
+	}
 
-		pathPrefix := clean.RemoveExtension(p)
-		ext := filepath.Ext(p)
+	var (
+		longestTerm       = mr.LongestMatchTerm()
+		longestTaggedPath = mr.LongestTaggedPath()
+		format            = fmt.Sprintf("Renamed: %%-%ds -> %%-%ds\n", longestTerm, longestTaggedPath)
+		failFormat        = fmt.Sprintf("FAILED: %%-%ds -> %%-%ds\n\n", longestTerm, longestTaggedPath)
+		noMatchFormat     = fmt.Sprintf("NO MATCH: %%-%ds\n\n", longestTerm)
+	)
 
-		normalizedTerms := clean.LanguageTags(
-			clean.ScreenResolutions(
-				clean.TokenizeAll(
-					clean.SplitPath(
-						clean.Domains(
-							clean.Tags(pathPrefix),
-						), depth))))
+	for _, match := range mr {
+		if match.IsMatch(0.24) {
 
-		normalizedTerm := strings.Join(normalizedTerms, " ")
-
-		common.Println(cmd, "Path    : ", p)
-		common.Println(cmd, "Search  : ", normalizedTerm)
-		distance, title, animeT, err := anidb.Search(normalizedTerm, filter.Metrics)
-		if err != nil {
-			return err
-		}
-		common.Println(cmd, "Found   : ", *title)
-
-		newPath := fmt.Sprintf("%s [anidb-%d]%s", pathPrefix, animeT.AID, ext)
-		common.Println(cmd, "Result  : ", newPath)
-		common.Println(cmd, "Distance: ", distance, "\n")
-
-		if apply {
-			err = os.Rename(p, newPath)
-			if err != nil {
-				return err
+			if apply {
+				err = os.Rename(match.MatchTerm, match.TaggedPath())
 			}
+			if err != nil {
+				common.Printf(cmd, failFormat, match.MatchTerm)
+				common.Println(cmd, match.String())
+			} else {
+				common.Printf(cmd, format, match.MatchTerm, match.TaggedPath())
+			}
+		} else {
+			common.Printf(cmd, noMatchFormat, match.MatchTerm)
 		}
 	}
 
 	if !apply {
-		common.Println(cmd, "No files were moved or renamed, please use the --apply or -a flags in order to apply the changes.")
+		return common.Println(cmd, "No files were moved or renamed, please use the --apply or -a flags in order to apply the changes.")
 	}
 
 	return nil
