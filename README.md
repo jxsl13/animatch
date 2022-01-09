@@ -48,10 +48,10 @@ Download the source code with either git or directly from the website as archive
 and unpack it to some directory. Usually the directory has the same name is the 
 project, `animatch` in this case.
 
-``shell
+```shell
 cd animatch
 go build .
-``
+```
 
 if you want to install from the source code to your `GOPATH` directory, you may 
 also execute the following command.
