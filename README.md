@@ -3,7 +3,7 @@
 **animatch** is an anime video file tagging tool.
 
 It uses the provided file name as reference. File names are cleaned, tokenized and normalized 
-in order before comparing them to the (also normalized) list of anime titles provided by AniDB.
+before comparing them to the (also normalized) list of anime titles provided by AniDB.
 
 The main command is:
 ```shell
