@@ -92,5 +92,5 @@ You may ask for a new feature in the github issues.
 
 - fully featured ranaming of the series title as well as the episode number and name.
 - Go templating engine in order to rename files according to all fetched meta data that is passed to the templating engine The resulting name must e.g. not contain any newline characters.
-
+- optional flags that control the threshold values.
 
