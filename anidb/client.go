@@ -22,9 +22,6 @@ var (
 type Client = anidb.Client
 
 func NewClient() *Client {
-	if client != nil {
-		return client
-	}
 	onceClient.Do(func() {
 		c := &Client{
 			Name:    ClientName,
