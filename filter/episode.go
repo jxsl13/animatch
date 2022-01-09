@@ -15,8 +15,6 @@ var (
 // ExtractEpisode tries to extract a numeric value.
 // Returns the string match and whether something was found
 func ExtractEpisode(searchTerm string) (string, bool) {
-
-	// episode number should be in the second half of the string
 	ss := episodeNumberRegex.FindAllString(searchTerm, -1)
 	if ss == nil {
 
